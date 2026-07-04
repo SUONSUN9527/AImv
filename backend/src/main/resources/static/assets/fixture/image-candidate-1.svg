@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1280" viewBox="0 0 720 1280">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#141a2b"/>
+      <stop offset="1" stop-color="#14acd2"/>
+    </linearGradient>
+  </defs>
+  <rect width="720" height="1280" fill="url(#g1)"/>
+  <circle cx="360" cy="440" r="150" fill="#0b0f1a" opacity="0.55"/>
+  <text x="360" y="980" fill="#ffffff" font-family="Inter, system-ui" font-size="44" text-anchor="middle">候选图 1</text>
+  <text x="360" y="1040" fill="#c8d2de" font-family="Inter, system-ui" font-size="26" text-anchor="middle">fixture 免费链路占位资产 9:16</text>
+</svg>

@@ -1,0 +1,28 @@
+backend/target/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+frontend/.vite/
+backend/.env
+backend/.env.*
+!backend/.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+.env
+.env.*
+!.env.example
+storage/projects/
+storage/tmp/
+backend/storage/logs/
+frontend/storage/logs/
+# 运行时生成的媒体（转存的图/视频，体积大、非源码）
+backend/storage/media/
+storage/media/
+# 任何密钥文件（凭证 AES key、导出的密钥等），杜绝误提交
+*.key
+credential.key
+*.log
+.DS_Store

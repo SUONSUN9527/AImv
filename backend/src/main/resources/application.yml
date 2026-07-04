@@ -1,0 +1,59 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: aimv
+  flyway:
+    enabled: false
+
+aimv:
+  provider-adapter:
+    base-url: ${AIMV_PROVIDER_ADAPTER_BASE_URL:}
+  dashscope:
+    api-key: ${AIMV_DASHSCOPE_API_KEY:}
+    api-base-url: ${AIMV_DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com/api/v1}
+    openai-base-url: ${AIMV_DASHSCOPE_OPENAI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+    llm-model: ${AIMV_DASHSCOPE_LLM_MODEL:qwen-plus}
+    image-model: ${AIMV_DASHSCOPE_IMAGE_MODEL:wan2.6-t2i}
+    image-size: ${AIMV_DASHSCOPE_IMAGE_SIZE:720*1280}
+    embedding-model: ${AIMV_DASHSCOPE_EMBEDDING_MODEL:text-embedding-v4}
+    embedding-dimensions: ${AIMV_DASHSCOPE_EMBEDDING_DIMENSIONS:1024}
+    rerank-model: ${AIMV_DASHSCOPE_RERANK_MODEL:qwen3-rerank}
+    rerank-top-n: ${AIMV_DASHSCOPE_RERANK_TOP_N:2}
+    video-model: ${AIMV_DASHSCOPE_VIDEO_MODEL:wan2.7-t2v}
+    video-resolution: ${AIMV_DASHSCOPE_VIDEO_RESOLUTION:720P}
+    video-ratio: ${AIMV_DASHSCOPE_VIDEO_RATIO:9:16}
+    video-duration-seconds: ${AIMV_DASHSCOPE_VIDEO_DURATION_SECONDS:10}
+    video-poll-attempts: ${AIMV_DASHSCOPE_VIDEO_POLL_ATTEMPTS:60}
+    video-poll-interval: ${AIMV_DASHSCOPE_VIDEO_POLL_INTERVAL:10s}
+    video-native-voice: ${AIMV_DASHSCOPE_VIDEO_NATIVE_VOICE:false}
+    tts-model: ${AIMV_DASHSCOPE_TTS_MODEL:qwen-tts}
+    tts-voice: ${AIMV_DASHSCOPE_TTS_VOICE:Chelsie}
+  video-voice:
+    enabled: ${AIMV_VIDEO_VOICE_ENABLED:true}
+    # 多镜头长视频：>0 用 N 个镜头拼长视频（如 12 镜头×5s≈60s 一致性短剧）；0 为单镜头 t2v。
+    shots: ${AIMV_VIDEO_SHOTS:0}
+    per-shot-seconds: ${AIMV_VIDEO_PER_SHOT_SECONDS:5}
+  media:
+    ffmpeg-path: ${AIMV_MEDIA_FFMPEG_PATH:ffmpeg}
+    storage-dir: ${AIMV_MEDIA_STORAGE_DIR:./storage/media}
+    public-base-url: ${AIMV_MEDIA_PUBLIC_BASE_URL:http://127.0.0.1:8081}
+  pollinations:
+    token: ${AIMV_POLLINATIONS_TOKEN:}
+    text-base-url: ${AIMV_POLLINATIONS_TEXT_BASE_URL:https://text.pollinations.ai}
+    text-model: ${AIMV_POLLINATIONS_TEXT_MODEL:openai}
+    image-base-url: ${AIMV_POLLINATIONS_IMAGE_BASE_URL:https://image.pollinations.ai}
+    image-model: ${AIMV_POLLINATIONS_IMAGE_MODEL:flux}
+    image-width: ${AIMV_POLLINATIONS_IMAGE_WIDTH:720}
+    image-height: ${AIMV_POLLINATIONS_IMAGE_HEIGHT:1280}
+  chain-run:
+    sync: ${AIMV_CHAIN_RUN_SYNC:false}
+  cors:
+    allowed-origin-patterns: ${AIMV_CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

@@ -1,0 +1,366 @@
+.jimeng-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  background: var(--page-bg);
+}
+
+.jimeng-shell.with-history {
+  grid-template-columns: var(--sidebar-width) var(--history-sidebar-width) minmax(0, 1fr);
+}
+
+.jimeng-shell.history-collapsed {
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+}
+
+.jimeng-rail {
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+  background: #f8f9fb;
+  padding: 36px 8px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.spark-logo {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  background:
+    radial-gradient(circle at 28% 18%, #fff9cc 0 18%, transparent 19%),
+    linear-gradient(135deg, #e9fdff, #f7fbff 58%, #eaf7ff);
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 169, 215, 0.14);
+}
+
+.spark-logo svg {
+  width: 18px;
+  height: 18px;
+}
+
+.rail-item {
+  width: 48px;
+  min-height: 48px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  color: #1f2937;
+  font-size: 10px;
+  line-height: 1;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.rail-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+.rail-item.active,
+.rail-item.router-link-active {
+  color: #111827;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+}
+
+.rail-item:hover {
+  transform: translateY(-1px);
+  background: #ffffff;
+}
+
+.creation-sidebar {
+  width: var(--history-sidebar-width);
+  min-width: 0;
+  min-height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: var(--panel-bg);
+  border-right: 1px solid var(--border);
+  padding: 22px 10px 18px;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.icon-button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel-bg);
+  display: inline-grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.icon-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.new-chat-button,
+.pill-button {
+  margin: 22px 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border-radius: 8px;
+  background: var(--soft-panel);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.history-content {
+  margin-top: 34px;
+}
+
+.history-list {
+  margin-top: 10px;
+  display: grid;
+  gap: 2px;
+}
+
+.history-item {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 4px 38px 4px 4px;
+  border-radius: 8px;
+  color: var(--text);
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.history-item:hover,
+.history-item.router-link-active,
+.history-item:has(.history-main.router-link-active) {
+  background: var(--soft-panel);
+}
+
+.history-item:focus-within {
+  background: var(--soft-panel);
+}
+
+.history-main {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.history-title {
+  display: block;
+  flex: 1 1 auto;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.22;
+}
+
+.history-status {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  display: inline-grid;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  transform: translateY(-50%);
+}
+
+.history-status-mark {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #02a9d7;
+}
+
+.history-status[data-state='running'] .history-status-mark {
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(226, 112, 37, 0.22);
+  border-top-color: #e27025;
+  background: transparent;
+  animation: history-task-spin 900ms linear infinite;
+}
+
+.history-status[data-state='stopped'] .history-status-mark {
+  background: #d0d5dd;
+}
+
+@keyframes history-task-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.history-item-disabled {
+  cursor: default;
+}
+
+.history-item-disabled .history-title {
+  color: #667085;
+}
+
+.history-rename-button {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--muted);
+  background: transparent;
+  opacity: 0;
+  transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
+}
+
+.history-item:hover .history-rename-button,
+.history-item:focus-within .history-rename-button {
+  opacity: 1;
+}
+
+.history-rename-button:hover {
+  color: var(--text);
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.history-rename-input {
+  min-width: 0;
+  width: 100%;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0 8px;
+  outline: 0;
+  color: var(--text);
+  background: #ffffff;
+  font: inherit;
+}
+
+.history-rename-input:focus {
+  border-color: rgba(2, 169, 215, 0.42);
+  box-shadow: 0 0 0 3px rgba(2, 169, 215, 0.1);
+}
+
+.history-context-menu {
+  position: fixed;
+  z-index: 60;
+  width: 128px;
+  padding: 5px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14), 0 2px 8px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.history-context-menu button {
+  width: 100%;
+  min-height: 30px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  color: var(--text);
+  background: transparent;
+  font-size: 13px;
+  text-align: left;
+}
+
+.history-context-menu button:hover,
+.history-context-menu button:focus-visible {
+  outline: 0;
+  background: var(--soft-panel);
+}
+
+.history-context-menu button:last-child {
+  color: #b42318;
+}
+
+.sidebar-resizer {
+  position: absolute;
+  inset: 0 -4px 0 auto;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.collapsed-sidebar-actions {
+  position: fixed;
+  left: calc(var(--sidebar-width) + 10px);
+  top: 18px;
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+}
+
+.jimeng-main {
+  min-width: 0;
+}
+
+@media (max-width: 1080px) {
+  .jimeng-shell,
+  .jimeng-shell.with-history,
+  .jimeng-shell.history-collapsed,
+  .jimeng-shell.asset-view,
+  .jimeng-shell.capability-view,
+  .jimeng-shell.workspace-view {
+    grid-template-columns: 1fr;
+  }
+
+  .jimeng-rail {
+    position: static;
+    min-height: 62px;
+    border-bottom: 1px solid var(--border);
+    flex-direction: row;
+    justify-content: center;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .spark-logo {
+    width: 34px;
+    height: 34px;
+  }
+
+  .creation-sidebar,
+  .collapsed-sidebar-actions {
+    display: none;
+  }
+}

@@ -1,0 +1,18 @@
+# postgres profile：启用后所有仓储切到 PostgresXxxRepository（@Profile("postgres")），
+# chain run / 产物 / 项目 / 阶段 / 知识库跨重启持久化，历史生成不再丢失。
+# 启动：java -jar ... --spring.profiles.active=postgres
+#
+# 注意（易踩坑）：本机同时跑着两个 pgvector 容器——
+#   - 5432  = 另一个项目 jobseek 的库（不要连它）
+#   - 55432 = 本项目 aimv-pgvector 容器（aimv 库、账号 aimv/aimv、已装 vector 扩展）
+# 所以默认端口用 55432；如需覆盖用环境变量 AIMV_POSTGRES_URL。
+aimv:
+  postgres:
+    url: ${AIMV_POSTGRES_URL:jdbc:postgresql://127.0.0.1:55432/aimv}
+    username: ${AIMV_POSTGRES_USERNAME:aimv}
+    password: ${AIMV_POSTGRES_PASSWORD:aimv}
+
+spring:
+  flyway:
+    enabled: true
+    locations: classpath:db/migration

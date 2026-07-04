@@ -1,0 +1,50 @@
+# AImv 一键运行：docker compose up -d --build
+# 三个服务：pgvector 数据库 + Spring Boot 后端 + Nginx 托管的前端。
+# 所有配置通过环境变量注入，不含任何真实 API Key（Key 启动后在前端「能力配置」页录入）。
+# 数据库口令是仅本地用的占位默认，可用 .env 覆盖：AIMV_PG_PASSWORD=xxxx
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: aimv
+      POSTGRES_PASSWORD: ${AIMV_PG_PASSWORD:-aimv_local_dev}
+      POSTGRES_DB: aimv
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aimv -d aimv"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  backend:
+    build: ./backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # 连容器内的 postgres 服务（5432），Flyway 启动时自动建表 + pgvector
+      AIMV_POSTGRES_URL: jdbc:postgresql://postgres:5432/aimv
+      AIMV_POSTGRES_USERNAME: aimv
+      AIMV_POSTGRES_PASSWORD: ${AIMV_PG_PASSWORD:-aimv_local_dev}
+      # 置空 = 媒体用相对 /media 地址，经前端 nginx 反代，前后端同源
+      AIMV_MEDIA_PUBLIC_BASE_URL: ""
+      AIMV_MEDIA_STORAGE_DIR: /app/storage/media
+    volumes:
+      - media:/app/storage/media       # 生成的图/视频持久化
+      - credkey:/root/.aimv            # 凭证 AES 密钥持久化（重启后已配 Key 仍可解密）
+    # 默认不直接对外暴露后端端口，统一走前端 nginx 反代访问；
+    # 如需直连后端调试，取消下一行注释：
+    # ports: ["8081:8081"]
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"                      # 浏览器访问入口：http://localhost:8080
+
+volumes:
+  pgdata:
+  media:
+  credkey:

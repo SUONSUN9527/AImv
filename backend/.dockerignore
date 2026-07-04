@@ -1,0 +1,10 @@
+# 不把本地构建产物、运行时数据、日志、密钥拷进镜像（防泄漏本地信息/媒体）
+target/
+storage/
+*.log
+*.pid
+.git
+.gitignore
+run-backend.sh
+*.env
+*.key
