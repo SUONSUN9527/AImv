@@ -10,6 +10,11 @@
   <img alt="License" src="https://img.shields.io/badge/License-MIT-blue">
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/demo.png" alt="AImv 生成示例" width="300"><br>
+  <sub>▲ 前端输入一句文案 → 经 RAG + 多阶段 Agent 链路生成的图片示例（DashScope 出图，自动转存 /media 永久托管）</sub>
+</p>
+
 ---
 
 ## 目录
