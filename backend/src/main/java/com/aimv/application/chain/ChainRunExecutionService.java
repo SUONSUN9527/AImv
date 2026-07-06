@@ -996,6 +996,7 @@ public class ChainRunExecutionService {
         ApiCredential currentGenerationCredential = selectedByCapability.get(generationCapabilityType);
         return apiConfigRepository.findCredentials(chainType, generationCapabilityType).stream()
             .filter(this::availableFreeCredential)
+            .filter(credential -> !isFixtureProvider(credential))
             .filter(credential -> !exhaustedGenerationApiKeyIds.contains(credential.apiKeyId()))
             .filter(credential -> hasDifferentProvider(credential, currentGenerationCredential))
             .findFirst()
@@ -1008,6 +1009,15 @@ public class ChainRunExecutionService {
         return (credential.status() == ApiKeyStatus.ACTIVE || credential.status() == ApiKeyStatus.AVAILABLE)
             && credential.freeModelGateStatus() == FreeModelGateStatus.PASSED
             && credential.lastVerifiedAt() != null;
+    }
+
+    /**
+     * fixture 是离线/开发用的确定性占位 provider（评审恒过、产物是占位图），
+     * 绝不能作为「真实生成被评审打回后」的降级兜底——否则会给用户交付一张打不开的占位图。
+     */
+    private boolean isFixtureProvider(ApiCredential credential) {
+        return credential.provider() != null
+            && credential.provider().toLowerCase(java.util.Locale.ROOT).contains("fixture");
     }
 
     private boolean hasDifferentProvider(ApiCredential candidate, ApiCredential current) {

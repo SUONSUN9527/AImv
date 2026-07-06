@@ -8,8 +8,8 @@ import java.util.Map;
 public final class StageReviewPolicy {
 
     private static final int DEFAULT_PASSING_SCORE = 95;
-    private static final int MINIMUM_STAGE_SCORE = 85;
-    private static final int MINIMUM_SHORT_DRAMA_SCORE = 90;
+    private static final int MINIMUM_STAGE_SCORE = 65;
+    private static final int MINIMUM_SHORT_DRAMA_SCORE = 70;
     private static final int MINIMUM_GOAL_CLARITY_SCORE = 90;
     private static final int PERFECT_SCORE = 100;
     private static final int IMAGE_TARGET_COUNT = 1;
@@ -208,14 +208,12 @@ public final class StageReviewPolicy {
         int finalScore = imageFinalScore(metadata);
         int safetyScore = intValue(metadata, "safetyScore");
         int artifactIntegrityScore = intValue(metadata, ARTIFACT_INTEGRITY_SCORE);
-        boolean passed = finalScore >= MINIMUM_STAGE_SCORE
-            && safetyScore == PERFECT_SCORE
-            && artifactIntegrityScore == PERFECT_SCORE;
+        // 撤掉主观分/安全分硬门禁：只要真实生成出了图（artifactIntegrity=100）就交付，
+        // 评分仅作信息展示、不再拦路（个人非商用，用户自负责）。内容合规仍由 provider 侧审核。
+        boolean passed = artifactIntegrityScore == PERFECT_SCORE;
         return new ReviewReport(passed, finalScore, rubricVersion(ChainType.IMAGE, stageCode),
-            passed ? stageName + "已按固定 rubric 通过"
-                : "图片质量评分未达标: finalScore=" + finalScore
-                    + ", safetyScore=" + safetyScore
-                    + ", artifactIntegrityScore=" + artifactIntegrityScore);
+            passed ? stageName + "已交付（评审分 " + finalScore + "，仅供参考）"
+                : "未生成有效图片产物");
     }
 
     /**
@@ -245,17 +243,11 @@ public final class StageReviewPolicy {
         int safetyScore = intValue(metadata, "safetyScore");
         int shortDramaScore = intValue(metadata, "shortDramaScore");
         boolean humanVoiceAudible = booleanStageValue(metadata, "humanVoiceAudible");
-        boolean passed = finalScore >= MINIMUM_STAGE_SCORE
-            && decodeIntegrityScore == PERFECT_SCORE
-            && safetyScore == PERFECT_SCORE
-            && shortDramaScore >= MINIMUM_SHORT_DRAMA_SCORE
-            && humanVoiceAudible;
+        // 撤掉主观分/安全分/人声等硬门禁：只要生成出可解码的真实视频就交付，评分仅作信息展示。
+        boolean passed = decodeIntegrityScore == PERFECT_SCORE;
         return new ReviewReport(passed, finalScore, rubricVersion(ChainType.VIDEO, stageCode),
-            passed ? stageName + "已按固定 rubric 通过"
-                : "视频质量评分未达标: decodeIntegrityScore=" + decodeIntegrityScore
-                    + ", safetyScore=" + safetyScore
-                    + ", shortDramaScore=" + shortDramaScore
-                    + ", 可听清人声=" + humanVoiceAudible);
+            passed ? stageName + "已交付（评审分 " + finalScore + "，仅供参考）"
+                : "未生成有效视频产物");
     }
 
     /**
