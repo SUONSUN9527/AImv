@@ -2,6 +2,7 @@ package com.aimv.infrastructure.chain;
 
 import com.aimv.domain.chain.ChainRun;
 import com.aimv.domain.chain.ChainRunRepository;
+import com.aimv.domain.chain.LatestChainRun;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -35,15 +36,16 @@ public class InMemoryChainRunRepository implements ChainRunRepository {
     }
 
     @Override
-    public Map<String, String> latestChainRunIdByProject() {
-        // 每个项目保留 createdAt 最新的一条链路，再映射成 projectId → chainRunId。
+    public Map<String, LatestChainRun> latestChainRunByProject() {
+        // 每个项目保留 createdAt 最新的一条链路，再映射成 projectId → (chainRunId, status)。
         Map<String, ChainRun> latestPerProject = new HashMap<>();
         for (ChainRun chainRun : chainRuns.values()) {
             latestPerProject.merge(chainRun.projectId(), chainRun,
                 (existing, candidate) -> candidate.createdAt().isAfter(existing.createdAt()) ? candidate : existing);
         }
-        Map<String, String> result = new HashMap<>();
-        latestPerProject.forEach((projectId, chainRun) -> result.put(projectId, chainRun.chainRunId()));
+        Map<String, LatestChainRun> result = new HashMap<>();
+        latestPerProject.forEach((projectId, chainRun) ->
+            result.put(projectId, new LatestChainRun(chainRun.chainRunId(), chainRun.status().name())));
         return result;
     }
 }

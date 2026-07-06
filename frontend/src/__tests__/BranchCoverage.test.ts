@@ -203,8 +203,7 @@ describe('branch coverage for API and status states', () => {
 
     store.activeChainRun = chainRun('FAILED');
     await waitFor(() => {
-      expect(screen.getByText('链路执行失败，可点击再次生成重试：CONTENT_SAFETY_REJECTED'))
-        .toBeInTheDocument();
+      expect(screen.getByText('生成失败：CONTENT_SAFETY_REJECTED')).toBeInTheDocument();
     });
 
     store.activeChainRun = chainRun('CANCELLED');

@@ -19,8 +19,8 @@ public class ConversationMemoryService {
     private final int recentVerbatim;
 
     public ConversationMemoryService(LlmSummarizer summarizer,
-            @Value("${aimv.conversation.context-threshold-chars:1400}") int thresholdChars,
-            @Value("${aimv.conversation.recent-verbatim-turns:3}") int recentVerbatim) {
+            @Value("${aimv.conversation.context-threshold-chars:4000}") int thresholdChars,
+            @Value("${aimv.conversation.recent-verbatim-turns:4}") int recentVerbatim) {
         this.summarizer = summarizer;
         this.thresholdChars = thresholdChars;
         this.recentVerbatim = Math.max(1, recentVerbatim);

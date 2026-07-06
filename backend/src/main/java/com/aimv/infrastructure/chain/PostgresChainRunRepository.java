@@ -5,6 +5,7 @@ import com.aimv.domain.artifact.ArtifactRepository;
 import com.aimv.domain.chain.ChainRun;
 import com.aimv.domain.chain.ChainRunRepository;
 import com.aimv.domain.chain.ChainRunStatus;
+import com.aimv.domain.chain.LatestChainRun;
 import com.aimv.domain.chain.ReviewReport;
 import com.aimv.domain.chain.StageRun;
 import com.aimv.domain.chain.StageRunStatus;
@@ -80,15 +81,16 @@ public class PostgresChainRunRepository implements ChainRunRepository {
     }
 
     @Override
-    public Map<String, String> latestChainRunIdByProject() {
-        // DISTINCT ON (project_id)：按 project_id 分组后取 created_at 最新的一条链路。
-        Map<String, String> result = new HashMap<>();
+    public Map<String, LatestChainRun> latestChainRunByProject() {
+        // DISTINCT ON (project_id)：按 project_id 分组后取 created_at 最新的一条链路（含状态）。
+        Map<String, LatestChainRun> result = new HashMap<>();
         jdbcTemplate.query("""
-            SELECT DISTINCT ON (project_id) project_id, id
+            SELECT DISTINCT ON (project_id) project_id, id, status
             FROM chain_run
             ORDER BY project_id, created_at DESC
             """, resultSet -> {
-            result.put(resultSet.getString("project_id"), resultSet.getString("id"));
+            result.put(resultSet.getString("project_id"),
+                new LatestChainRun(resultSet.getString("id"), resultSet.getString("status")));
         });
         return result;
     }

@@ -62,8 +62,28 @@ final class DashScopeImageProviderHttpGateway {
             return response(request, response.getBody());
         } catch (RestClientException exception) {
             throw new BusinessException(HttpStatus.BAD_GATEWAY, "DASHSCOPE_IMAGE_PROVIDER_UNAVAILABLE",
-                "DashScope 图片模型调用失败");
+                dashScopeFailureReason(exception));
         }
+    }
+
+    /** 从 DashScope 返回体提取可读失败原因（内容审核/额度等），供前端展示，不再是笼统"调用失败"。 */
+    private String dashScopeFailureReason(RestClientException exception) {
+        String body = exception instanceof org.springframework.web.client.HttpStatusCodeException httpError
+            ? httpError.getResponseBodyAsString() : "";
+        String lower = body.toLowerCase(Locale.ROOT);
+        if (lower.contains("datainspection") || lower.contains("inappropriate") || lower.contains("green")
+            || lower.contains("risk") || lower.contains("审核") || lower.contains("违规") || lower.contains("敏感")) {
+            return "内容未通过服务商审核，请调整描述后重试";
+        }
+        if (lower.contains("throttl") || lower.contains("quota") || lower.contains("limit") || lower.contains("额度")) {
+            return "服务商额度/限流，请稍后重试";
+        }
+        java.util.regex.Matcher matcher =
+            java.util.regex.Pattern.compile("\"message\"\\s*:\\s*\"([^\"]{1,120})\"").matcher(body);
+        if (matcher.find()) {
+            return "图片生成失败：" + matcher.group(1);
+        }
+        return "图片模型调用失败，请稍后重试";
     }
 
     String configuredApiKey() {

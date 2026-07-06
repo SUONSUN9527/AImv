@@ -12,8 +12,9 @@ public interface ChainRunRepository {
     Optional<ChainRun> findByStageRunId(String stageRunId);
 
     /**
-     * 返回「项目ID → 该项目下最新一次链路ID」的映射（一次查询批量取回，避免 N+1）。
-     * 供前端历史侧边栏把「项目」历史项也变成可点击、直达对应 workspace 链路。
+     * 返回「项目ID → 该项目下最新一次链路（id + 状态）」的映射（一次查询批量取回，避免 N+1）。
+     * 供前端历史侧边栏把「项目」历史项变成可点击、直达对应 workspace 链路，
+     * 并展示服务端真实状态（链路完成后不再一直转圈圈）。
      */
-    Map<String, String> latestChainRunIdByProject();
+    Map<String, LatestChainRun> latestChainRunByProject();
 }

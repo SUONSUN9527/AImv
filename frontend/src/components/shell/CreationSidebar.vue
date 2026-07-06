@@ -79,7 +79,9 @@
       :style="{ left: `${historyMenu.x}px`, top: `${historyMenu.y}px` }"
       @contextmenu.prevent
     >
-      <button type="button" role="menuitem" @click="pinHistoryItem(historyMenu.itemId)">置顶</button>
+      <button type="button" role="menuitem" @click="pinHistoryItem(historyMenu.itemId)">
+        {{ isHistoryItemPinned(historyMenu.itemId) ? '取消置顶' : '置顶' }}
+      </button>
       <button type="button" role="menuitem" @click="deleteHistoryItem(historyMenu.itemId)">删除</button>
     </div>
   </aside>
@@ -88,22 +90,23 @@
 <script setup lang="ts">
 import { PanelLeftCloseIcon, PencilIcon } from '@lucide/vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { useChainRunStore } from '../../stores/useChainRunStore';
 import { useProjectStore } from '../../stores/useProjectStore';
 import { useShellStore } from '../../stores/useShellStore';
 import { buildSidebarHistoryItems, type SidebarHistoryItem } from './historyItems';
 
 const HISTORY_TITLE_STORAGE_KEY = 'aimv.historyTitleOverrides';
-const HISTORY_PIN_STORAGE_KEY = 'aimv.historyPinnedIds';
 const HISTORY_HIDDEN_STORAGE_KEY = 'aimv.historyHiddenIds';
 const HISTORY_READ_COMPLETED_STORAGE_KEY = 'aimv.historyReadCompletedIds';
 const shell = useShellStore();
 const route = useRoute();
+const router = useRouter();
 const chainRuns = useChainRunStore();
 const projects = useProjectStore();
 const titleOverrides = ref(readTitleOverrides());
-const pinnedHistoryIds = ref(readStringList(HISTORY_PIN_STORAGE_KEY));
+// 置顶改为后端持久化：置顶集合由 projects store 维护（服务端 pinnedAt 播种 + 乐观更新），不再依赖 localStorage。
+const pinnedIds = computed(() => projects.pinnedProjectIds);
 const hiddenHistoryIds = ref(readStringList(HISTORY_HIDDEN_STORAGE_KEY));
 const readCompletedHistoryIds = ref(readStringList(HISTORY_READ_COMPLETED_STORAGE_KEY));
 const editingHistoryId = ref('');
@@ -114,7 +117,7 @@ let resizeState: { pointerId: number; startX: number; startWidth: number; target
 
 const historyItems = computed(() =>
   buildSidebarHistoryItems(chainRuns.recentRuns, projects.uniqueRecentProjects, titleOverrides.value, {
-    pinnedIds: pinnedHistoryIds.value,
+    pinnedIds: pinnedIds.value,
     hiddenIds: hiddenHistoryIds.value
   })
 );
@@ -130,7 +133,7 @@ function shouldShowHistoryStatus(item: SidebarHistoryItem) {
   if (item.statusState !== 'complete') {
     return false;
   }
-  return item.id !== currentChainRunId.value && !readCompletedHistoryIds.value.includes(item.id);
+  return item.chainRunId !== currentChainRunId.value && !readCompletedHistoryIds.value.includes(item.id);
 }
 
 function historyAriaLabel(item: SidebarHistoryItem) {
@@ -138,7 +141,7 @@ function historyAriaLabel(item: SidebarHistoryItem) {
 }
 
 function markCurrentCompletedHistoryAsRead() {
-  const item = historyItems.value.find((historyItem) => historyItem.id === currentChainRunId.value);
+  const item = historyItems.value.find((historyItem) => historyItem.chainRunId === currentChainRunId.value);
   if (!item || item.statusState !== 'complete' || readCompletedHistoryIds.value.includes(item.id)) {
     return;
   }
@@ -261,26 +264,44 @@ function closeHistoryMenuOnEscape(event: KeyboardEvent) {
   }
 }
 
-function pinHistoryItem(itemId: string) {
-  const nextIds = [itemId, ...pinnedHistoryIds.value.filter((id) => id !== itemId)];
-  pinnedHistoryIds.value = nextIds;
-  persistStringList(HISTORY_PIN_STORAGE_KEY, nextIds);
-  closeHistoryMenu();
+function isHistoryItemPinned(itemId: string) {
+  return projects.isPinned(itemId);
 }
 
-function deleteHistoryItem(itemId: string) {
+// 置顶/取消置顶：后端持久化（按 projectId），失败静默不打断用户。
+async function pinHistoryItem(itemId: string) {
+  const pinned = isHistoryItemPinned(itemId);
+  closeHistoryMenu();
+  try {
+    await projects.setPinned(itemId, !pinned);
+  } catch {
+    // 网络失败时保持原状，不向用户抛错。
+  }
+}
+
+// 删除对话：后端级联删除 + 清本地链路缓存；当前打开的正是该会话时退回新对话页。
+async function deleteHistoryItem(itemId: string) {
+  closeHistoryMenu();
+  const wasActive = chainRuns.activeChainRun?.projectId === itemId;
+  chainRuns.forgetProjectRuns(itemId);
+  // 兜底：先本地隐藏，避免删除请求往返期间列表闪回。
   const nextHiddenIds = Array.from(new Set([...hiddenHistoryIds.value, itemId]));
   hiddenHistoryIds.value = nextHiddenIds;
-  pinnedHistoryIds.value = pinnedHistoryIds.value.filter((id) => id !== itemId);
+  persistStringList(HISTORY_HIDDEN_STORAGE_KEY, nextHiddenIds);
   readCompletedHistoryIds.value = readCompletedHistoryIds.value.filter((id) => id !== itemId);
+  persistStringList(HISTORY_READ_COMPLETED_STORAGE_KEY, readCompletedHistoryIds.value);
   const nextOverrides = { ...titleOverrides.value };
   delete nextOverrides[itemId];
   titleOverrides.value = nextOverrides;
-  persistStringList(HISTORY_HIDDEN_STORAGE_KEY, nextHiddenIds);
-  persistStringList(HISTORY_PIN_STORAGE_KEY, pinnedHistoryIds.value);
-  persistStringList(HISTORY_READ_COMPLETED_STORAGE_KEY, readCompletedHistoryIds.value);
   persistTitleOverrides(nextOverrides);
-  closeHistoryMenu();
+  try {
+    await projects.remove(itemId);
+  } catch {
+    // 后端删除失败也已本地隐藏；下次刷新会重试可见性。
+  }
+  if (wasActive) {
+    void router.push('/generate');
+  }
 }
 
 function readTitleOverrides() {
@@ -346,12 +367,32 @@ function browserStorage() {
   }
 }
 
+// 侧边栏常驻，切换对话时不会重挂载；用轮询刷新服务端状态，
+// 保证「切出去还在跑」的对话在其后台完成后能自动从「生成中」变为完成，无需手动点进去。
+const STATUS_REFRESH_MS = 4000;
+let statusRefreshTimer: number | null = null;
+function hasRunningHistory() {
+  return historyItems.value.some((item) => item.statusState === 'running');
+}
 onBeforeUnmount(() => {
   stopResize();
   closeHistoryMenu();
+  if (statusRefreshTimer !== null) {
+    window.clearInterval(statusRefreshTimer);
+    statusRefreshTimer = null;
+  }
 });
 watch([historyItems, currentChainRunId], markCurrentCompletedHistoryAsRead, { immediate: true });
+// 切换/打开对话时刷新一次状态，让刚完成的对话尽快脱离转圈。
+watch(currentChainRunId, () => {
+  void projects.loadRecent();
+});
 onMounted(() => {
   void projects.loadRecent();
+  statusRefreshTimer = window.setInterval(() => {
+    if (hasRunningHistory()) {
+      void projects.loadRecent();
+    }
+  }, STATUS_REFRESH_MS);
 });
 </script>

@@ -9,6 +9,7 @@ import {
 } from '../api/chainRuns';
 import { buildConversationMemory } from '../api/conversation';
 import { createProject } from '../api/projects';
+import { extractRawRequest } from '../utils/conversation';
 import type { ApiSelectionSnapshot, ChainRun, ChainRunStatus, ChainType, ExternalJob } from '../types/api';
 
 const TERMINAL_STATUSES: ChainRunStatus[] = [
@@ -91,13 +92,8 @@ function updateRecentRuns(runs: ChainRun[], chainRun: ChainRun, moveToTop: boole
 }
 
 // 上下文压缩阈值（近似模型可用「记忆」预算的字符数）。超过则压缩旧轮次，避免超长上下文。
-const MAX_CONTEXT_CHARS = 1400;
-
-// 剥离既往轮次带的记忆包裹，只取该轮真正的请求，避免多轮累积时层层嵌套（压缩才不失真）。
-function extractRawRequest(goal: string): string {
-  const match = goal.match(/【本次要求】([\s\S]*)$/);
-  return (match ? match[1] : goal).trim();
-}
+// 提高阈值：连续对话尽量把外貌/风格锚点原文带全，改善多张图之间的连贯性与样貌一致性。
+const MAX_CONTEXT_CHARS = 4000;
 
 // 压缩对话为「记忆」：不超阈值就全量；超了则保留「最初设定」(锚点)+最近若干轮 verbatim，
 // 中间旧轮归纳为一句提示——保住主体/风格锚点与近期上下文这两处最关键的信息，不做无脑截断。
@@ -140,6 +136,17 @@ export const useChainRunStore = defineStore('chainRuns', {
       const nextRuns = updateRecentRuns(this.recentRuns, chainRun, moveToTop);
       this.recentRuns = nextRuns;
       persistRecentRuns(nextRuns);
+    },
+    // 删除对话时清掉本地缓存的该项目所有链路（recentRuns 存于 localStorage，
+    // 不清会导致会话在侧边栏复活）；若正好是当前活动对话则停止轮询并清空。
+    forgetProjectRuns(projectId: string) {
+      const nextRuns = this.recentRuns.filter((run) => run.projectId !== projectId);
+      this.recentRuns = nextRuns;
+      persistRecentRuns(nextRuns);
+      if (this.activeChainRun?.projectId === projectId) {
+        this.stopPolling();
+        this.activeChainRun = null;
+      }
     },
     async createAndStart(chainType: ChainType, userGoal: string) {
       this.loading = true;
@@ -185,7 +192,7 @@ export const useChainRunStore = defineStore('chainRuns', {
           memory = compressConversation(requests, MAX_CONTEXT_CHARS);
         }
         const goal = memory
-          ? `【对话记忆(延续创作，保持既定主体/风格/角色，不要推翻)】${memory}\n【本次要求】${followUp.trim()}`
+          ? `【对话记忆(同一角色的连续创作：必须沿用完全一致的人物外貌——性别/年龄/发型发色/五官/身材/服饰款式与配色/标志道具，以及既定风格与场景；仅按本次要求做增量改动，不要更换人物或推翻既定设定)】${memory}\n【本次要求】${followUp.trim()}`
           : followUp.trim();
         const chainRun = await startChainRun(current.projectId, chainType, goal);
         this.activeChainType = chainType;

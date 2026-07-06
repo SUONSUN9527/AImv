@@ -1,6 +1,7 @@
 package com.aimv.application.project;
 
 import com.aimv.domain.chain.ChainRunRepository;
+import com.aimv.domain.chain.LatestChainRun;
 import com.aimv.domain.project.CreativeProject;
 import com.aimv.domain.project.ProjectRepository;
 import java.time.Instant;
@@ -31,8 +32,18 @@ public class ProjectApplicationService {
         return projectRepository.findRecent(RECENT_PROJECT_LIMIT);
     }
 
-    /** projectId → 该项目最新链路ID，供前端把项目历史项也做成可点击直达 workspace。 */
-    public Map<String, String> latestChainRunIdByProject() {
-        return chainRunRepository.latestChainRunIdByProject();
+    /** 删除一段对话及其全部链路/知识数据（外键级联）。幂等：项目不存在也不报错。 */
+    public void delete(String projectId) {
+        projectRepository.delete(projectId);
+    }
+
+    /** 置顶/取消置顶一段对话。置顶时记录当前时间，取消时清空。 */
+    public void setPinned(String projectId, boolean pinned) {
+        projectRepository.updatePinned(projectId, pinned ? Instant.now() : null);
+    }
+
+    /** projectId → 该项目最新链路（id + 状态），供前端把历史项做成可点击直达并展示真实状态。 */
+    public Map<String, LatestChainRun> latestChainRunByProject() {
+        return chainRunRepository.latestChainRunByProject();
     }
 }

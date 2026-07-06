@@ -135,6 +135,11 @@ export type Project = {
   createdAt: string;
   // 该项目最新一次链路ID；后端持久化后返回，前端据此把项目历史项做成可点击直达 workspace。
   latestChainRunId?: string | null;
+  // 该项目最新一次链路的服务端真实状态（SUCCEEDED/FAILED/EXECUTING…）；
+  // 侧边栏据此展示状态，避免仅凭本地缓存在链路已完成后仍显示「生成中」。
+  latestChainRunStatus?: string | null;
+  // 置顶时间；非空表示该对话已置顶，侧边栏按置顶时间倒序排在最前。
+  pinnedAt?: string | null;
 };
 
 export type ChainRun = {

@@ -34,4 +34,15 @@ public class InMemoryProjectRepository implements ProjectRepository {
             .limit(limit)
             .toList();
     }
+
+    @Override
+    public void delete(String projectId) {
+        projects.remove(projectId);
+    }
+
+    @Override
+    public void updatePinned(String projectId, java.time.Instant pinnedAt) {
+        projects.computeIfPresent(projectId, (id, existing) -> new CreativeProject(
+            existing.projectId(), existing.title(), existing.goal(), existing.createdAt(), pinnedAt));
+    }
 }

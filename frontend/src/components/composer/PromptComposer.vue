@@ -50,6 +50,7 @@ function submit() {
   const value = localValue.value.trim();
   if (value) {
     emit('submit', value);
+    localValue.value = '';
   }
 }
 

@@ -22,7 +22,7 @@
       <div v-if="chainRun" class="conversation-thread">
         <!-- 历史轮次（同一对话内的既往生成）：只读展示，滚动查看整段连续对话 -->
         <article v-for="turn in previousTurns" :key="turn.chainRunId" class="conversation-turn">
-          <div class="user-bubble">{{ turn.userGoal }}</div>
+          <div class="user-bubble">{{ extractRawRequest(turn.userGoal) }}</div>
           <div class="assistant-block">
             <ResultStrip
               v-if="turnSucceeded(turn)"
@@ -49,7 +49,7 @@
             <button type="submit" :disabled="!editDraft.trim() || chainRuns.loading">确定</button>
           </div>
         </form>
-        <div v-else class="user-bubble">{{ chainRun.userGoal }}</div>
+        <div v-else class="user-bubble">{{ extractRawRequest(chainRun.userGoal) }}</div>
         <div class="assistant-block">
           <ResultStrip
             v-if="isSucceeded"
@@ -102,6 +102,19 @@ import ResultStrip from '../components/workspace/ResultStrip.vue';
 import { useApiConfigStore } from '../stores/useApiConfigStore';
 import { useChainRunStore } from '../stores/useChainRunStore';
 import type { ChainType } from '../types/api';
+import { extractRawRequest } from '../utils/conversation';
+
+// 失败原因清洗：隐藏 SQL/堆栈等技术细节，只放行简短可读的原因给用户。
+function cleanFailReason(reason?: string | null): string {
+  if (!reason) {
+    return '';
+  }
+  if (/SQL|Exception|INSERT|PreparedStatement|\bat [a-zA-Z]+\./.test(reason)) {
+    return '';
+  }
+  const trimmed = reason.trim();
+  return trimmed.length > 80 ? `${trimmed.slice(0, 80)}…` : trimmed;
+}
 
 const route = useRoute();
 const router = useRouter();
@@ -157,8 +170,9 @@ const statusCopy = computed(() => {
     return '正在整理交付信息';
   }
   if (chainRun.value.status === 'FAILED') {
-    // 只给用户"生成失败"，不暴露 SQL/异常等技术细节（技术详情留在后端日志里）。
-    return '生成失败，请点击"再次生成"重试';
+    // 展示可读的失败原因（隐藏 SQL/堆栈等技术细节）。
+    const reason = cleanFailReason(chainRun.value.blockingReason);
+    return reason ? `生成失败：${reason}` : '生成失败，请点击"再次生成"重试';
   }
   if (chainRun.value.status === 'CANCELLED') {
     return '链路已取消，可重新生成。';
@@ -192,7 +206,7 @@ watch(chainRun, (value) => {
   }
   chainType.value = value.chainType;
   if (!isEditingGoal.value) {
-    editDraft.value = value.userGoal;
+    editDraft.value = extractRawRequest(value.userGoal);
   }
 }, { immediate: true });
 
@@ -200,14 +214,14 @@ function startInlineEdit() {
   if (!chainRun.value) {
     return;
   }
-  editDraft.value = chainRun.value.userGoal;
+  editDraft.value = extractRawRequest(chainRun.value.userGoal);
   isEditingGoal.value = true;
   void nextTick(() => editorRef.value?.focus());
 }
 
 function cancelEdit() {
   isEditingGoal.value = false;
-  editDraft.value = chainRun.value?.userGoal ?? '';
+  editDraft.value = chainRun.value ? extractRawRequest(chainRun.value.userGoal) : '';
 }
 
 async function confirmEdit() {
